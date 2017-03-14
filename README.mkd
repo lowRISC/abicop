@@ -1,0 +1,84 @@
+# riscv-calling-conv-model
+
+This project was created with the aim of providing a "golden model" of the
+[RISC-V calling
+convention](https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md)
+and to hopefully form part of a RISC-V ABI compliance test suite. It is of
+course early days, so for now please consider it a prototype.
+
+## Usage
+
+Usage example:
+
+    $ python3
+    Python 3.6.0 (default, Jan 16 2017, 12:12:55) 
+    [GCC 6.3.1 20170109] on linux
+    Type "help", "copyright", "credits" or "license" for more information.
+    >>> from rvcc import *
+    >>> m = RVMachine(xlen=32, flen=64)
+    >>> m.call([
+    ... Int(32),
+    ... Float(64),
+    ... Struct(Int(8), Array(Float(32), 1)),
+    ... Struct(Array(Int(8), 20)),
+    ... Int(64),
+    ... Int(64),
+    ... Int(64)])
+    Args:
+    arg00: SInt32
+    arg01: Float64
+    arg02: Struct([SInt8, Pad24, Array(Float32*1, s32, a32)], s64, a32)
+    arg03: Struct([Array(SInt8*20, s160, a8)], s160, a8)
+    arg04: SInt64
+    arg05: SInt64
+    arg06: SInt64
+
+    GPRs:
+    GPR[a0]: arg00
+    GPR[a1]: arg02[0:7]
+    GPR[a2]: &arg03
+    GPR[a3]: arg04[0:31]
+    GPR[a4]: arg04[32:63]
+    GPR[a5]: arg05[0:31]
+    GPR[a6]: arg05[32:63]
+    GPR[a7]: arg06[0:31]
+
+    FPRs:
+    FPR[fa0]: arg01
+    FPR[fa1]: arg02[32:63]
+    FPR[fa2]: ?
+    FPR[fa3]: ?
+    FPR[fa4]: ?
+    FPR[fa5]: ?
+    FPR[fa6]: ?
+    FPR[fa7]: ?
+
+    Stack:
+    arg06[32:63]
+    """)
+
+## License
+
+    Copyright (c) 2017 lowRISC CIC
+
+    Permission is hereby granted, free of charge, to any person
+    obtaining a copy of this software and associated documentation
+    files (the "Software"), to deal in the Software without
+    restriction, including without limitation the rights to use,
+    copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the
+    Software is furnished to do so, subject to the following
+    conditions:
+
+    The above copyright notice and this permission notice shall be
+    included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+    EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+    OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+    NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+    HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+    WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+    OTHER DEALINGS IN THE SOFTWARE.
+
