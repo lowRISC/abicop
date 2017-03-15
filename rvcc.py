@@ -282,7 +282,7 @@ class RVMachine(object):
                 # in fprs/gprs (i.e. it is possible it contains two floating 
                 # point values, or one fp + one int)
                 flat_ty = ty
-                if isStruct(ty) and ty.size <= 2*flen:
+                if isStruct(ty) and ty.size <= max(2*flen, 2*xlen):
                     flat_ty = Struct(*ty.flatten())
                     if len(flat_ty.members) == 1:
                         flat_ty = flat_ty[0]
