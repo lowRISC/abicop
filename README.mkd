@@ -55,7 +55,6 @@ Usage example:
 
     Stack:
     arg06[32:63]
-    """)
 
 ## License
 
