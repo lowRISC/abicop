@@ -173,13 +173,13 @@ class CCState(object):
     def assign_to_stack(self, ty):
         if ty.size > 2*self.xlen:
             raise ValueError('objects larger than 2x xlen should be passed by reference')
-        # Insert padding first if necessary
-        if (self.stack_offset % ty.alignment) != 0:
-            pad_size = -(self.stack_offset % -ty.alignment)
-            self.stack.append(Pad(pad_size))
-            self.stack_offset += pad_size
         self.stack.append(ty)
         self.stack_offset += ty.size
+        # Insert padding to align to xlen if necessary
+        if (self.stack_offset % self.xlen) != 0:
+            pad_size = -(self.stack_offset % -self.xlen)
+            self.stack.append(Pad(pad_size))
+            self.stack_offset += pad_size
 
     def pass_by_reference(self, ty):
         ptrty = Ptr(self.xlen)
