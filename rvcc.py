@@ -298,8 +298,9 @@ class RVMachine(object):
                     if len(mems) == 2:
                         ty1, ty2 = mems[0], mems[1]
                         ty1_slice = Slice(ty, 0, ty1.size - 1)
-                        ty2_slice = Slice(ty, max(ty1.size, ty2.alignment),
-                                          flat_ty.size - 1)
+                        ty2_off = max(ty1.size, ty2.alignment)
+                        ty2_slice = Slice(ty, ty2_off,
+                                          ty2_off + ty2.size - 1)
                         if (isFloat(ty1) and isFloat(ty2)
                             and ty1.size <= flen and ty2.size <= flen
                             and state.fprs_left >= 2):
