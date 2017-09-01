@@ -231,6 +231,9 @@ class RVMachine(object):
         self.flen = flen
 
     def call(self, in_args, out_arg=None):
+        # Ensure all argument/return type objects are unique
+        if (len(in_args) != len(set(in_args))) or out_arg in in_args:
+            raise ValueError("Unique type objects must be used")
         # Filter out empty structs
         in_args = [arg for arg in in_args if arg.size > 0]
         xlen, flen = self.xlen, self.flen
