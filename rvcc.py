@@ -187,19 +187,19 @@ class CCState(object):
         if ty in self.type_name_mapping:
             self.type_name_mapping[ptrty] = '&'+self.type_name_mapping[ty]
 
-    def __repr__(self):
-        def typestr_or_name(ty):
-            suffix = ''
-            if ty == None:
-                return '?'
-            elif isinstance(ty, Slice):
-                suffix = '[{}:{}]'.format(ty.low, ty.high)
-                if ty.child in self.type_name_mapping:
-                    return self.type_name_mapping[ty.child]+suffix
-                else:
-                    return repr(ty)
-            return self.type_name_mapping.get(ty, repr(ty))
+    def typestr_or_name(self, ty):
+        suffix = ''
+        if ty == None:
+            return '?'
+        elif isinstance(ty, Slice):
+            suffix = '[{}:{}]'.format(ty.low, ty.high)
+            if ty.child in self.type_name_mapping:
+                return self.type_name_mapping[ty.child]+suffix
+            else:
+                return repr(ty)
+        return self.type_name_mapping.get(ty, repr(ty))
 
+    def __repr__(self):
         out = []
         if len(self.type_name_mapping) > 0:
             out.append('Args:')
@@ -212,17 +212,17 @@ class CCState(object):
         out.append('GPRs:')
         for i in range(0, 8):
             out.append('GPR[a{}]: {}'.format(i, 
-                typestr_or_name(self.gprs[i+10])))
+                self.typestr_or_name(self.gprs[i+10])))
 
         if self.flen:
             out.append('\nFPRs:')
             for i in range(0, 8):
                 out.append('FPR[fa{}]: {}'.format(i,
-                    typestr_or_name(self.fprs[i+10])))
+                    self.typestr_or_name(self.fprs[i+10])))
 
         out.append('\nStack:')
         for ty in self.stack:
-            out.append(typestr_or_name(ty))
+            out.append(self.typestr_or_name(ty))
         return '\n'.join(out)
 
 class RVMachine(object):
