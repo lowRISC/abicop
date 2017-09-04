@@ -25,6 +25,11 @@ def get_arg_fprs(state):
 def get_stack_objects(state):
     return [state.typestr_or_name(obj) for obj in state.stack]
 
+def test_no_args_void_return():
+    m = RVMachine(xlen=32)
+    state = m.call([])
+    assert(get_arg_gprs(state)[0:1] == ["?"])
+
 def test_many_args():
     # The stack should be used when arg registers are exhausted
     m = RVMachine(xlen=32)
