@@ -49,8 +49,8 @@ def test_no_args_void_return():
 def test_many_args():
     # The stack should be used when arg registers are exhausted
     m = RVMachine(xlen=32)
-    state = m.call([Int(8), Int(8), Int(8), Int(8), Int(8), Int(8), Int(8), 
-        Int(8), Int(8), Int(8), Int(128)])
+    state = m.call([UInt(8), Int(8), Int(8), Int(8), Int(8), Int(8), Int(8),
+        Int(8), Int(8), Int(8), UInt(128)])
     assert(get_stack_objects(state) == ["arg08", "Pad24", "arg09", "Pad24", "&arg10"])
 
 def test_2xlen_rv32i():

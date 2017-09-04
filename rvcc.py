@@ -19,6 +19,12 @@ class Int(object):
     def __repr__(self):
         return '{}Int{}'.format('S' if self.signed else 'U', self.size)
 
+def UInt(size):
+    return Int(size, signed=False)
+
+def SInt(size):
+    return Int(size, signed=True)
+
 class Float(object):
     def __init__(self, size):
         self.size = size
