@@ -25,12 +25,20 @@ def UInt(size):
 def SInt(size):
     return Int(size, signed=True)
 
-class Float(object):
+Int8, Int16, Int32, Int64, Int128 = [SInt(i) for i in [8,16,32,64,128]]
+SInt8, SInt16, SInt32, SInt64, SInt128 = [Int8, Int16, Int32, Int64, Int128]
+Char = Int8
+UInt8, UInt16, UInt32, UInt64, UInt128 = [UInt(i) for i in [8,16,32,64,128]]
+
+class FP(object):
     def __init__(self, size):
         self.size = size
         self.alignment = size
     def __repr__(self):
-        return 'Float{}'.format(self.size)
+        return 'FP{}'.format(self.size)
+
+Float, Double, LongDouble = FP(32), FP(64), FP(128)
+FP32, FP64, FP128 = Float, Double, LongDouble
 
 class Ptr(object):
     def __init__(self, size):
@@ -38,6 +46,8 @@ class Ptr(object):
         self.alignment = size
     def __repr__(self):
         return 'Ptr{}'.format(self.size)
+
+Ptr32, Ptr64 = Ptr(32), Ptr(64)
 
 class Pad(object):
     def __init__(self, size):
@@ -296,8 +306,8 @@ class RVMachine(object):
             return isinstance(ty, Struct)
         def isArray(ty):
             return isinstance(ty, Array)
-        def isFloat(ty):
-            return isinstance(ty, Float)
+        def isFP(ty):
+            return isinstance(ty, FP)
         def isInt(ty):
             return isinstance(ty, Int)
         def isPad(ty):
@@ -311,7 +321,7 @@ class RVMachine(object):
             if isInt(arg) and arg.size < xlen:
                 arg.size = xlen
                 arg.alignment = xlen
-            elif isFloat(arg) and arg.size < xlen:
+            elif isFP(arg) and arg.size < xlen:
                 arg.size = flen
                 arg.alignment = flen
 
@@ -330,11 +340,11 @@ class RVMachine(object):
             mems = [mem for mem in ty.members if not isPad(mem)]
             if len(mems) == 2:
                 ty1, ty2 = mems[0], mems[1]
-                if ((isFloat(ty1) and isFloat(ty2) and
+                if ((isFP(ty1) and isFP(ty2) and
                     ty1.size <= flen and ty2.size <= flen) or
-                   (isFloat(ty1) and isInt(ty2) and
+                   (isFP(ty1) and isInt(ty2) and
                     ty1.size <= flen and ty2.size <= xlen) or
-                   (isInt(ty1) and isFloat(ty2) and
+                   (isInt(ty1) and isFP(ty2) and
                     ty1.size <= xlen and ty2.size <= flen)):
                     pass
                 else:
@@ -357,7 +367,7 @@ class RVMachine(object):
                     flat_ty = Struct(*ty.flatten())
                     if len(flat_ty.members) == 1:
                         flat_ty = flat_ty[0]
-                if isFloat(flat_ty) and flat_ty.size <= flen and state.fprs_left >= 1:
+                if isFP(flat_ty) and flat_ty.size <= flen and state.fprs_left >= 1:
                     state.assign_to_fpr(ty)
                     continue
                 elif isStruct(flat_ty) and flat_ty.size <= 2*flen:
@@ -369,19 +379,19 @@ class RVMachine(object):
                         ty2_off = max(ty1.size, ty2.alignment)
                         ty2_slice = Slice(ty, ty2_off,
                                           ty2_off + ty2.size - 1)
-                        if (isFloat(ty1) and isFloat(ty2)
+                        if (isFP(ty1) and isFP(ty2)
                             and ty1.size <= flen and ty2.size <= flen
                             and state.fprs_left >= 2):
                            state.assign_to_fpr(ty1_slice)
                            state.assign_to_fpr(ty2_slice)
                            continue
-                        elif (isFloat(ty1) and isInt(ty2) and
+                        elif (isFP(ty1) and isInt(ty2) and
                               ty1.size <= flen and ty2.size <= xlen and
                               state.fprs_left >= 1 and state.gprs_left >= 1):
                             state.assign_to_fpr(ty1_slice)
                             state.assign_to_gpr(ty2_slice)
                             continue
-                        elif (isInt(ty1) and isFloat(ty2) and
+                        elif (isInt(ty1) and isFP(ty2) and
                               ty1.size <= xlen and ty2.size <= flen and
                               state.gprs_left >=1 and state.fprs_left >=1):
                             state.assign_to_gpr(ty1_slice)
@@ -417,17 +427,17 @@ Type "help", "copyright", "credits" or "license" for more information.
 >>> from rvcc import *
 >>> m = RVMachine(xlen=32, flen=64)
 >>> m.call([
-... Int(32),
-... Float(64),
-... Struct(Int(8), Array(Float(32), 1)),
-... Struct(Array(Int(8), 20)),
-... Int(64),
-... Int(64),
-... Int(64)])
+... Int32,
+... Double,
+... Struct(Int8, Array(Float, 1)),
+... Struct(Array(Int8, 20)),
+... Int64,
+... Int64,
+... Int64])
 Args:
 arg00: SInt32
-arg01: Float64
-arg02: Struct([SInt8, Pad24, Array(Float32*1, s32, a32)], s64, a32)
+arg01: FP64
+arg02: Struct([SInt8, Pad24, Array(FP32*1, s32, a32)], s64, a32)
 arg03: Struct([Array(SInt8*20, s160, a8)], s160, a8)
 arg04: SInt64
 arg05: SInt64
