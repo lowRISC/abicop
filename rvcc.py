@@ -144,12 +144,12 @@ class CCState(object):
         self.stack_offset = 0
         self.type_name_mapping = {}
 
-    def name_types(self, in_args, var_args_set, out_arg):
+    def name_types(self, in_args, var_args_index, out_arg):
         i = 0
         arg_idx = 0
         varg_idx = 0
-        for ty in in_args:
-            if ty in var_args_set:
+        for index, ty in enumerate(in_args):
+            if index >= var_args_index:
                 self.type_name_mapping[ty] = 'varg'+str(varg_idx).zfill(2)
                 varg_idx += 1
             else:
@@ -274,13 +274,14 @@ class RVMachine(object):
 
     def call(self, in_args, out_arg=None):
         # Remove the VarArgs wrapper type, but keep track of the arguments
-        # specified to be vararg.
-        var_args_set = set()
+        # specified to be vararg. var_args_index will point past the end of
+        # in_args if there are now varargs.
+        var_args_index = len(in_args)
         if len(in_args) >= 1 and isinstance(in_args[-1], VarArgs):
             var_args = in_args[-1].args
             in_args.pop()
+            var_args_index = len(in_args)
             in_args.extend(var_args)
-            var_args_set.update(var_args)
 
         self.verify_arg_list(in_args, out_arg)
 
@@ -301,10 +302,9 @@ class RVMachine(object):
         xlen, flen = self.xlen, self.flen
 
         # Promote varargs
-        for arg in in_args:
-            if arg not in var_args_set:
-                continue
-            elif isInt(arg) and arg.size < xlen:
+        for idx in range(var_args_index, len(in_args)):
+            arg = in_args[idx]
+            if isInt(arg) and arg.size < xlen:
                 arg.size = xlen
                 arg.alignment = xlen
             elif isFloat(arg) and arg.size < xlen:
@@ -312,7 +312,7 @@ class RVMachine(object):
                 arg.alignment = flen
 
         state = CCState(xlen, flen)
-        state.name_types(in_args, var_args_set, out_arg)
+        state.name_types(in_args, var_args_index, out_arg)
 
         # Error out if Arrays are being passed/returned directly. This isn't 
         # supported in C
@@ -340,10 +340,11 @@ class RVMachine(object):
         elif out_arg and out_arg.size > 2*xlen:
             state.pass_by_reference(out_arg)
 
-        for ty in in_args:
+        for index, ty in enumerate(in_args):
+            is_var_arg = index >= var_args_index
             # Special-case rules introduced by the floating point calling 
             # convention
-            if flen and ty not in var_args_set:
+            if flen and not is_var_arg:
                 # Flatten the struct if there is any chance it may be passed 
                 # in fprs/gprs (i.e. it is possible it contains two floating 
                 # point values, or one fp + one int)
@@ -390,7 +391,7 @@ class RVMachine(object):
             elif ty.size <= 2*xlen:
                 # 2xlen-aligned varargs must be passed in an aligned register
                 # pair
-                if (ty in var_args_set and ty.alignment == 2*xlen
+                if (is_var_arg and ty.alignment == 2*xlen
                     and state.gprs_left % 2 == 1):
                     state.skip_gpr()
                 if state.gprs_left > 0:
