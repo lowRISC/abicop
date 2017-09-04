@@ -166,6 +166,11 @@ def test_var_args():
         "varg01[0:31]", "varg01[32:63]", "?"])
     assert(get_arg_fprs(state)[0:2] == ["arg00", "?"])
 
+    # Varargs should be promoted
+    state = m.call([VarArgs(Float(32), Int(8), Int(16, False))])
+    print([str(state.gprs[10]), str(state.gprs[11]), str(state.gprs[12])] ==
+            ["Float32", "SInt32", "Uint32"])
+
 def test_simple_usage():
     m = RVMachine(xlen=32, flen=64)
     state = m.call([

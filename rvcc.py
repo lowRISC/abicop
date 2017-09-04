@@ -277,10 +277,6 @@ class RVMachine(object):
         # Filter out empty structs
         in_args = [arg for arg in in_args if arg.size > 0]
 
-        xlen, flen = self.xlen, self.flen
-        state = CCState(xlen, flen)
-        state.name_types(in_args, var_args_set, out_arg)
-
         def isStruct(ty):
             return isinstance(ty, Struct)
         def isArray(ty):
@@ -291,6 +287,22 @@ class RVMachine(object):
             return isinstance(ty, Int)
         def isPad(ty):
             return isinstance(ty, Pad)
+
+        xlen, flen = self.xlen, self.flen
+
+        # Promote varargs
+        for arg in in_args:
+            if arg not in var_args_set:
+                continue
+            elif isInt(arg) and arg.size < xlen:
+                arg.size = xlen
+                arg.alignment = xlen
+            elif isFloat(arg) and arg.size < xlen:
+                arg.size = flen
+                arg.alignment = flen
+
+        state = CCState(xlen, flen)
+        state.name_types(in_args, var_args_set, out_arg)
 
         # Error out if Arrays are being passed/returned directly. This isn't 
         # supported in C
