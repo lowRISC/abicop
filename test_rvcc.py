@@ -201,3 +201,16 @@ def test_large_return():
     assert(get_arg_gprs(state)[0:2] == ["&ret", "?"])
     state = m.call([], Int32)
     assert(get_arg_gprs(state)[0] == "?")
+
+def test_ret_calculations():
+    m = RVMachine(xlen=32, flen=64)
+    state = m.ret(Int32)
+    assert(get_arg_gprs(state)[0:2] == ["ret", "?"])
+
+    state = m.ret(Int128)
+    assert(get_arg_gprs(state)[0:2] == ["?", "?"])
+    assert(len(state.stack) == 0)
+
+    state = m.ret(Struct(Int32, Double))
+    assert(get_arg_gprs(state)[0:2] == ["ret[0:31]", "?"])
+    assert(get_arg_fprs(state)[0:2] == ["ret[64:127]", "?"])

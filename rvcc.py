@@ -281,6 +281,25 @@ class RVMachine(object):
             if (isinstance(arg, VarArgs)):
                 raise InvalidVarArgs("VarArgs must be last element")
 
+    def ret(self, ty):
+        # Values are returned in the same way a named argument of the same
+        # type would be passed. If it would be passed by reference, the
+        # argument list is rewritten so the first argument is a pointer to
+        # caller-allocated memory where the return value can be placed.
+        in_args = []
+        if ty:
+            in_args = [ty]
+
+        state = self.call(in_args)
+
+        # Detect the case where the return value would be passed by reference
+        if state.typestr_or_name(state.gprs[10]).startswith('&'):
+            state.gprs[10] = None
+
+        newty = next(iter(state.type_name_mapping))
+        state.type_name_mapping[newty] = 'ret'
+        return state
+
 
     def call(self, in_args, out_arg=None):
         # Remove the VarArgs wrapper type, but keep track of the arguments
