@@ -247,6 +247,10 @@ class InvalidVarArgs(Exception):
 
 class RVMachine(object):
     def __init__(self, xlen=64, flen=None):
+        if xlen not in [32, 64, 128]:
+            raise ValueError("unsupported XLEN")
+        if flen and flen not in [32, 64, 128]:
+            raise ValueError("unsupported FLEN")
         self.xlen = xlen
         self.flen = flen
 

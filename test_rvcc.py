@@ -16,6 +16,22 @@ def test_repeated_object():
     with pytest.raises(ValueError):
         print(RVMachine().call([i32], i32))
 
+def test_invalid_xlen():
+    with pytest.raises(ValueError):
+       RVMachine(xlen=16)
+    with pytest.raises(ValueError):
+       RVMachine(xlen=33)
+    with pytest.raises(ValueError):
+       RVMachine(xlen=256)
+
+def test_invalid_flen():
+    with pytest.raises(ValueError):
+       RVMachine(flen=16)
+    with pytest.raises(ValueError):
+       RVMachine(flen=33)
+    with pytest.raises(ValueError):
+       RVMachine(flen=256)
+
 def get_arg_gprs(state):
     return [state.typestr_or_name(state.gprs[idx]) for idx in range(10, 18)]
 
