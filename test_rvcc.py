@@ -126,6 +126,22 @@ def test_fp_int_aggregates_rv32ifd():
         assert(get_arg_gprs(state)[0:2] == ["arg00[0:31]", "?"])
         assert(get_arg_fprs(state)[0:2] == ["arg00[64:127]", "?"])
 
+def test_var_args_wrapper():
+    # Test that VarArgs can't be misused
+    m = RVMachine(xlen=32)
+    with pytest.raises(InvalidVarArgs):
+        RVMachine().call([], VarArgs(Int(32)))
+    with pytest.raises(InvalidVarArgs):
+        RVMachine().call([VarArgs(Int(32)), VarArgs(Int(64))])
+    with pytest.raises(InvalidVarArgs):
+        RVMachine().call([VarArgs(Int(32)), Int(64)])
+
+def test_var_args():
+    m = RVMachine(xlen=32, flen=64)
+
+    state = m.call([Int(32), VarArgs(Int(32), Struct(Int(64), Float(64)))])
+    assert(get_arg_gprs(state)[0:4] == ["arg00", "varg00", "&varg01", "?"])
+
 def test_simple_usage():
     m = RVMachine(xlen=32, flen=64)
     state = m.call([

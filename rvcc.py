@@ -117,6 +117,12 @@ class Slice(object):
     def __repr__(self):
         return '{}[{}:{}]'.format(self.child, self.low, self.high)
 
+class VarArgs(object):
+    def __init__(self, *args):
+        self.args = list(args)
+    def __repr__(self):
+        return 'VarArgs({})'.format(self.args)
+
 class CCState(object):
     def __init__(self, xlen, flen):
         self.xlen = xlen
@@ -132,11 +138,17 @@ class CCState(object):
         self.stack_offset = 0
         self.type_name_mapping = {}
 
-    def name_types(self, in_args, out_arg):
+    def name_types(self, in_args, var_args_set, out_arg):
         i = 0
+        arg_idx = 0
+        varg_idx = 0
         for ty in in_args:
-            self.type_name_mapping[ty] = 'arg'+str(i).zfill(2)
-            i += 1
+            if ty in var_args_set:
+                self.type_name_mapping[ty] = 'varg'+str(varg_idx).zfill(2)
+                varg_idx += 1
+            else:
+                self.type_name_mapping[ty] = 'arg'+str(arg_idx).zfill(2)
+                arg_idx += 1
         if out_arg:
             self.type_name_mapping[out_arg] = 'ret'
 
@@ -225,20 +237,44 @@ class CCState(object):
             out.append(self.typestr_or_name(ty))
         return '\n'.join(out)
 
+class InvalidVarArgs(Exception):
+    pass
+
 class RVMachine(object):
     def __init__(self, xlen=64, flen=None):
         self.xlen = xlen
         self.flen = flen
 
-    def call(self, in_args, out_arg=None):
+    # Should be called after any expected VarArgs has been flattened
+    def verify_arg_list(self, in_args, out_arg):
         # Ensure all argument/return type objects are unique
         if (len(in_args) != len(set(in_args))) or out_arg in in_args:
             raise ValueError("Unique type objects must be used")
+        if isinstance(out_arg, VarArgs):
+            raise InvalidVarArgs("Return type cannot be varargs")
+        for arg in in_args:
+            if (isinstance(arg, VarArgs)):
+                raise InvalidVarArgs("VarArgs must be last element")
+
+
+    def call(self, in_args, out_arg=None):
+        # Remove the VarArgs wrapper type, but keep track of the arguments
+        # specified to be vararg.
+        var_args_set = set()
+        if len(in_args) >= 1 and isinstance(in_args[-1], VarArgs):
+            var_args = in_args[-1].args
+            in_args.pop()
+            in_args.extend(var_args)
+            var_args_set.update(var_args)
+
+        self.verify_arg_list(in_args, out_arg)
+
         # Filter out empty structs
         in_args = [arg for arg in in_args if arg.size > 0]
+
         xlen, flen = self.xlen, self.flen
         state = CCState(xlen, flen)
-        state.name_types(in_args, out_arg)
+        state.name_types(in_args, var_args_set, out_arg)
 
         def isStruct(ty):
             return isinstance(ty, Struct)
