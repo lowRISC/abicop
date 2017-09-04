@@ -9,13 +9,6 @@ def test_first_class_array_ret():
     with pytest.raises(ValueError):
         RVMachine().call([], Array(Int(8), 2))
 
-def test_repeated_object():
-    i32 = Int(32)
-    with pytest.raises(ValueError):
-        print(RVMachine().call([i32, i32]))
-    with pytest.raises(ValueError):
-        print(RVMachine().call([i32], i32))
-
 def test_invalid_xlen():
     with pytest.raises(ValueError):
        RVMachine(xlen=16)

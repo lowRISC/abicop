@@ -4,7 +4,7 @@
 #
 # See LICENSE file for copyright and license details
 
-import operator
+import copy, operator
 
 # All alignments and sizes are currently specified in bits
 
@@ -282,6 +282,10 @@ class RVMachine(object):
             in_args.pop()
             var_args_index = len(in_args)
             in_args.extend(var_args)
+
+        # Ensure there's a unique object to represent every argument type
+        in_args = [copy.copy(arg) for arg in in_args]
+        out_arg = copy.copy(out_arg)
 
         self.verify_arg_list(in_args, out_arg)
 
