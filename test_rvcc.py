@@ -142,6 +142,25 @@ def test_var_args():
     state = m.call([Int(32), VarArgs(Int(32), Struct(Int(64), Float(64)))])
     assert(get_arg_gprs(state)[0:4] == ["arg00", "varg00", "&varg01", "?"])
 
+    # 2xlen aligned and sized varargs are passed in an aligned register pair
+    state = m.call([Int(32), VarArgs(Int(64))])
+    assert(get_arg_gprs(state)[0:4] == ["arg00", "?", "varg00[0:31]", "varg00[32:63]"])
+    state = m.call([Int(32), Int(32), Int(32), Int(32), Int(32), Int(32), Int(32), VarArgs(Int(64))])
+    assert(get_arg_gprs(state)[6:8] == ["arg06", "?"])
+    assert(get_stack_objects(state) == ["varg00"])
+
+    # a 2xlen argument with alignment less than 2xlen isn't passed in an
+    # aligned register pair
+    state = m.call([VarArgs(Int(32), Struct(Ptr(32), Int(32)))])
+    assert(get_arg_gprs(state)[0:4] == ["varg00", "varg01[0:31]", "varg01[32:63]", "?"])
+
+    # Floating point varargs are always passed according to the integer
+    # calling convention
+    state = m.call([Float(32), VarArgs(Float(64), Struct(Int(32), Float(32)))])
+    assert(get_arg_gprs(state)[0:5] == ["varg00[0:31]", "varg00[32:63]",
+        "varg01[0:31]", "varg01[32:63]", "?"])
+    assert(get_arg_fprs(state)[0:2] == ["arg00", "?"])
+
 def test_simple_usage():
     m = RVMachine(xlen=32, flen=64)
     state = m.call([

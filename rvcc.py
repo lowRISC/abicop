@@ -155,6 +155,11 @@ class CCState(object):
     def next_arg_gpr(self):
         return (8-self.gprs_left)+10
 
+    def skip_gpr(self):
+        if (self.gprs_left == 0):
+            raise ValueError('all GPRs assigned')
+        self.gprs_left -= 1
+
     def assign_to_gpr_or_stack(self, ty):
         if ty.size > self.xlen:
             raise ValueError('object is larger than xlen')
@@ -316,7 +321,7 @@ class RVMachine(object):
         for ty in in_args:
             # Special-case rules introduced by the floating point calling 
             # convention
-            if flen:
+            if flen and ty not in var_args_set:
                 # Flatten the struct if there is any chance it may be passed 
                 # in fprs/gprs (i.e. it is possible it contains two floating 
                 # point values, or one fp + one int)
@@ -361,6 +366,11 @@ class RVMachine(object):
             if ty.size <= xlen:
                 state.assign_to_gpr_or_stack(ty)
             elif ty.size <= 2*xlen:
+                # 2xlen-aligned varargs must be passed in an aligned register
+                # pair
+                if (ty in var_args_set and ty.alignment == 2*xlen
+                    and state.gprs_left % 2 == 1):
+                    state.skip_gpr()
                 if state.gprs_left > 0:
                     state.assign_to_gpr_or_stack(Slice(ty, 0, xlen-1))
                     state.assign_to_gpr_or_stack(Slice(ty, xlen, 2*xlen - 1))
