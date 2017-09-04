@@ -12,12 +12,12 @@ def align_to(x, align):
     return x - (x % -align)
 
 class Int(object):
-    def __init__(self, size, signed=False):
+    def __init__(self, size, signed=True):
         self.size = size
         self.alignment = size
         self.signed = signed
     def __repr__(self):
-        return '{}Int{}'.format('U' if self.signed else 'S', self.size)
+        return '{}Int{}'.format('S' if self.signed else 'U', self.size)
 
 class Float(object):
     def __init__(self, size):
