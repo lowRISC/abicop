@@ -27,8 +27,8 @@ def SInt(size):
 
 Int8, Int16, Int32, Int64, Int128 = [SInt(i) for i in [8,16,32,64,128]]
 SInt8, SInt16, SInt32, SInt64, SInt128 = [Int8, Int16, Int32, Int64, Int128]
-Char = Int8
 UInt8, UInt16, UInt32, UInt64, UInt128 = [UInt(i) for i in [8,16,32,64,128]]
+Char = UInt8
 
 class FP(object):
     def __init__(self, size):
