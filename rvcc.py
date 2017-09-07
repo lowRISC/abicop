@@ -151,7 +151,6 @@ class CCState(object):
             self.fprs = [None] * 32
             self.fprs_left = 8
         self.stack = []
-        self.stack_offset = 0
         self.type_name_mapping = {}
 
     def name_types(self, in_args, var_args_index, out_arg):
@@ -207,12 +206,6 @@ class CCState(object):
         if ty.size > 2*self.xlen:
             raise ValueError('objects larger than 2x xlen should be passed by reference')
         self.stack.append(ty)
-        self.stack_offset += ty.size
-        # Insert padding to align to xlen if necessary
-        if (self.stack_offset % self.xlen) != 0:
-            pad_size = -(self.stack_offset % -self.xlen)
-            self.stack.append(Pad(pad_size))
-            self.stack_offset += pad_size
 
     def pass_by_reference(self, ty):
         ptrty = Ptr(self.xlen)
@@ -231,6 +224,32 @@ class CCState(object):
             else:
                 return repr(ty)
         return self.type_name_mapping.get(ty, repr(ty))
+
+    def get_oldsp_rel_stack_locs(self):
+        locs = []
+        oldsp_off = 0
+        for idx, ty in enumerate(self.stack):
+            if idx == 0:
+                locs.append(0)
+                continue
+            obj = self.stack[idx]
+            prev_obj = self.stack[idx-1]
+            oldsp_off += prev_obj.size
+            oldsp_off = align_to(oldsp_off, self.xlen)
+            oldsp_off = align_to(oldsp_off, obj.alignment)
+            locs.append(oldsp_off//8)
+        return locs
+
+    def get_oldsp_rel_stack_loc(self, obj_idx):
+        if obj_idx < 0 or obj_idx >= len(self.stack):
+            raise ValueError("invalid stack object")
+        obj = self.stack[obj_idx]
+        sp_offset = 0
+        for i in range(0, obj_idx):
+            sp_offset = align_to(sp_offset, max(self.xlen, self.stack[i].alignment))
+            sp_offset += self.stack[i].size
+        sp_offset = align_to(sp_offset, max(self.xlen, obj.alignment))
+        return sp_offset//8
 
     def __repr__(self):
         out = []
@@ -254,8 +273,10 @@ class CCState(object):
                     self.typestr_or_name(self.fprs[i+10])))
 
         out.append('\nStack:')
-        for ty in self.stack:
-            out.append(self.typestr_or_name(ty))
+        oldsp_offs = self.get_oldsp_rel_stack_locs()
+        for idx, ty in enumerate(self.stack):
+            out.append('{} (oldsp+{})'.format(self.typestr_or_name(ty),
+                oldsp_offs[idx]))
         return '\n'.join(out)
 
 class InvalidVarArgs(Exception):

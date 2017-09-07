@@ -44,7 +44,8 @@ def test_many_args():
     m = RVMachine(xlen=32)
     state = m.call([UInt8, Char, Char, Char, Char, Char, Char,
         Int8, Int8, Int8, UInt128])
-    assert(get_stack_objects(state) == ["arg08", "Pad24", "arg09", "Pad24", "&arg10"])
+    assert(get_stack_objects(state) == ["arg08", "arg09", "&arg10"])
+    assert(state.get_oldsp_rel_stack_locs() == [0, 4, 8])
 
 def test_2xlen_rv32i():
     # 2xlen arguments are passed in GPRs, which need not be 'aligned' register 
@@ -65,7 +66,8 @@ def test_2xlen_rv32i():
     # stack
     state = m.call([Int8, Int8, Int8, Int8, Int8, Int8, Int8,
         Int8, Int8, Double])
-    assert(get_stack_objects(state) == ["arg08", "Pad24", "arg09"])
+    assert(get_stack_objects(state) == ["arg08", "arg09"])
+    assert(state.get_oldsp_rel_stack_locs() == [0, 8])
 
 def test_gt_2xlen_rv32i():
     # scalars and aggregates > 2xlen are passed indirect
@@ -214,3 +216,9 @@ def test_ret_calculations():
     state = m.ret(Struct(Int32, Double))
     assert(get_arg_gprs(state)[0:2] == ["ret[0:31]", "?"])
     assert(get_arg_fprs(state)[0:2] == ["ret[64:127]", "?"])
+
+def test_stack_info():
+    m = RVMachine(xlen=32)
+    state = m.call([Int32]*7 + [Double, Int64, Float, Struct(Int64, Int64)])
+    assert(str(state).splitlines()[-4:] == ["arg07[32:63] (oldsp+0)",
+            "arg08 (oldsp+8)", "arg09 (oldsp+16)", "&arg10 (oldsp+20)"])
