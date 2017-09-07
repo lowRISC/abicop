@@ -461,8 +461,8 @@ if __name__ == '__main__':
     print("""
 Usage example:
 $ python3
-Python 3.6.0 (default, Jan 16 2017, 12:12:55) 
-[GCC 6.3.1 20170109] on linux
+Python 3.6.2 (default, Jul 20 2017, 03:52:27)
+[GCC 7.1.1 20170630] on linux
 Type "help", "copyright", "credits" or "license" for more information.
 >>> from rvcc import *
 >>> m = RVMachine(xlen=32, flen=64)
@@ -504,5 +504,5 @@ FPR[fa6]: ?
 FPR[fa7]: ?
 
 Stack:
-arg06[32:63]
+arg06[32:63] (oldsp+0)
 """)

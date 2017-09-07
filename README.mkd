@@ -2,32 +2,32 @@
 
 This project was created with the aim of providing a "golden model" of the
 [RISC-V calling
-convention](https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md)
-and to hopefully form part of a RISC-V ABI compliance test suite. It is of
-course early days, so for now please consider it a prototype.
+convention](https://github.com/riscv/riscv-elf-psabi-doc/blob/master/riscv-elf.md).
+It will soon be expanded to support test case generation, to form part of a
+RISC-V ABI compliance suite.
 
 ## Usage
 
 Usage example:
 
     $ python3
-    Python 3.6.0 (default, Jan 16 2017, 12:12:55) 
-    [GCC 6.3.1 20170109] on linux
+    Python 3.6.2 (default, Jul 20 2017, 03:52:27)
+    [GCC 7.1.1 20170630] on linux
     Type "help", "copyright", "credits" or "license" for more information.
     >>> from rvcc import *
     >>> m = RVMachine(xlen=32, flen=64)
     >>> m.call([
-    ... Int(32),
-    ... Float(64),
-    ... Struct(Int(8), Array(Float(32), 1)),
-    ... Struct(Array(Int(8), 20)),
-    ... Int(64),
-    ... Int(64),
-    ... Int(64)])
+    ... Int32,
+    ... Double,
+    ... Struct(Int8, Array(Float, 1)),
+    ... Struct(Array(Int8, 20)),
+    ... Int64,
+    ... Int64,
+    ... Int64])
     Args:
     arg00: SInt32
-    arg01: Float64
-    arg02: Struct([SInt8, Pad24, Array(Float32*1, s32, a32)], s64, a32)
+    arg01: FP64
+    arg02: Struct([SInt8, Pad24, Array(FP32*1, s32, a32)], s64, a32)
     arg03: Struct([Array(SInt8*20, s160, a8)], s160, a8)
     arg04: SInt64
     arg05: SInt64
@@ -54,7 +54,7 @@ Usage example:
     FPR[fa7]: ?
 
     Stack:
-    arg06[32:63]
+    arg06[32:63] (oldsp+0)
 
 ## License
 
