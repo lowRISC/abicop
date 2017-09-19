@@ -140,7 +140,7 @@ class VarArgs(object):
         return 'VarArgs({})'.format(self.args)
 
 class CCState(object):
-    def __init__(self, xlen, flen):
+    def __init__(self, xlen, flen, in_args, var_args_index, out_arg):
         self.xlen = xlen
         self.flen = flen
         self.gprs_left = 8
@@ -152,6 +152,10 @@ class CCState(object):
             self.fprs_left = 8
         self.stack = []
         self.type_name_mapping = {}
+        self.in_args = in_args
+        self.var_args_index = var_args_index
+        self.out_arg = out_arg
+        self.name_types(in_args, var_args_index, out_arg)
 
     def name_types(self, in_args, var_args_index, out_arg):
         i = 0
@@ -325,7 +329,7 @@ class RVMachine(object):
     def call(self, in_args, out_arg=None):
         # Remove the VarArgs wrapper type, but keep track of the arguments
         # specified to be vararg. var_args_index will point past the end of
-        # in_args if there are now varargs.
+        # in_args if there are no varargs.
         var_args_index = len(in_args)
         if len(in_args) >= 1 and isinstance(in_args[-1], VarArgs):
             var_args = in_args[-1].args
@@ -365,8 +369,7 @@ class RVMachine(object):
                 arg.size = flen
                 arg.alignment = flen
 
-        state = CCState(xlen, flen)
-        state.name_types(in_args, var_args_index, out_arg)
+        state = CCState(xlen, flen, in_args, var_args_index, out_arg)
 
         # Error out if Arrays are being passed/returned directly. This isn't 
         # supported in C
