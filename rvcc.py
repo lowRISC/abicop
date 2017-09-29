@@ -4,7 +4,7 @@
 #
 # See LICENSE file for copyright and license details
 
-import copy, operator
+import copy, operator, random
 
 # All alignments and sizes are currently specified in bits
 
@@ -18,6 +18,19 @@ class Int(object):
         self.signed = signed
     def __repr__(self):
         return '{}Int{}'.format('S' if self.signed else 'U', self.size)
+    def random_literal(self):
+        if self.signed:
+            lower = -2**(self.size-1)
+            upper = (2**(self.size-1))-1
+            val = random.randint(lower, upper)
+        else:
+            val = random.randint(0, 2**(self.size-1))
+        suffix = ''
+        if not self.signed:
+            suffix += 'u'
+        if self.size > 32:
+            suffix += 'll'
+        return str(val) + suffix
 
 def UInt(size):
     return Int(size, signed=False)
@@ -36,6 +49,19 @@ class FP(object):
         self.alignment = size
     def __repr__(self):
         return 'FP{}'.format(self.size)
+    def random_literal(self):
+        # For now, don't bother generating any possible fp value
+        int_part = random.randint(-1000, 1000)
+        fract_part = random.randint(0, 9)
+        if self.size == 32:
+            suffix = 'f'
+        elif self.size == 64:
+            suffix = ''
+        elif self.size == 128:
+            suffix = 'l'
+        else:
+            raise ValueError("Can't represent fp value of that size")
+        return str(int_part) + '.' +  str(fract_part) + suffix
 
 Float, Double, LongDouble = FP(32), FP(64), FP(128)
 FP32, FP64, FP128 = Float, Double, LongDouble
@@ -46,6 +72,12 @@ class Ptr(object):
         self.alignment = size
     def __repr__(self):
         return 'Ptr{}'.format(self.size)
+    def random_literal(self):
+        val = random.randint(0, 2**(self.size-1))
+        suffix = 'u'
+        if self.size == 64:
+            suffix += 'll'
+        return '(char*)' + hex(val) + suffix
 
 Ptr32, Ptr64 = Ptr(32), Ptr(64)
 
@@ -95,6 +127,17 @@ class Struct(object):
     def __repr__(self):
         return 'Struct({}, s{}, a{})'.format(self.members, 
                 self.size, self.alignment)
+
+    def random_literal(self, name):
+        if (not name):
+            raise ValueError('must have type name')
+        res = '(struct ' + name + '){'
+        random_lits = []
+        for ty in self.members:
+            if hasattr(ty, 'flatten'):
+                raise ValueError("don't support nested aggregates")
+            random_lits.append(ty.random_literal())
+        return res + ', '.join(random_lits) + '}'
 
 class Union(object):
     def __init__(self, *members):

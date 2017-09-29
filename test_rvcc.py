@@ -222,3 +222,26 @@ def test_stack_info():
     state = m.call([Int32]*7 + [Double, Int64, Float, Struct(Int64, Int64)])
     assert(str(state).splitlines()[-4:] == ["arg07[32:63] (oldsp+0)",
             "arg08 (oldsp+8)", "arg09 (oldsp+16)", "&arg10 (oldsp+20)"])
+
+def test_random_int():
+    random.seed(14)
+    assert(Int(8, True).random_literal() == '-74')
+    assert(Int(8, False).random_literal() == '63u')
+    assert(Int(32, True).random_literal() == '-1048936187')
+    assert(Int(64, False).random_literal() == '1339710923952836751ull')
+
+def test_random_fp():
+    random.seed(20)
+    assert(Float.random_literal() == '854.2f')
+    assert(Double.random_literal() == '-468.1')
+    assert(LongDouble.random_literal() == '786.5l')
+
+def test_random_ptr():
+    random.seed(30)
+    assert(Ptr32.random_literal() == '(char*)0x4a08c720u')
+    assert(Ptr64.random_literal() == '(char*)0x7b07fa39c6ab710ull')
+
+def test_random_struct():
+    random.seed(40)
+    assert(Struct(Int32, Ptr32, Float).random_literal('foo') ==
+           '(struct foo){-2010704054, (char*)0x484d1466u, 361.3f}')
