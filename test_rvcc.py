@@ -243,5 +243,34 @@ def test_random_ptr():
 
 def test_random_struct():
     random.seed(40)
-    assert(Struct(Int32, Ptr32, Float).random_literal('foo') ==
+    strct_ty = Struct(Int32, Ptr32, Float)
+    strct_ty.name = 'foo'
+    assert(strct_ty.random_literal() ==
            '(struct foo){-2010704054, (char*)0x484d1466u, 361.3f}')
+
+def test_c_types():
+    assert(Int8.ctype() == 'int8_t')
+    assert(UInt8.ctype() == 'uint8_t')
+    assert(Char.ctype() == 'uint8_t')
+    assert(Int16.ctype() == 'int16_t')
+    assert(UInt16.ctype() == 'uint16_t')
+    assert(Int32.ctype() == 'int32_t')
+    assert(UInt32.ctype() == 'uint32_t')
+    assert(Int64.ctype() == 'int64_t')
+    assert(UInt64.ctype() == 'uint64_t')
+    assert(Int128.ctype() == 'int128_t')
+    assert(UInt128.ctype() == 'uint128_t')
+    assert(Float.ctype() == 'float')
+    assert(Double.ctype() == 'double')
+    assert(LongDouble.ctype() == 'long double')
+    assert(Ptr32.ctype() == 'char*')
+    assert(Ptr64.ctype() == 'char*')
+    strct_ty = Struct(LongDouble, Ptr32, UInt64)
+    strct_ty.name = 'foo'
+    assert(strct_ty.ctype() == 'struct foo')
+
+def test_cdecl():
+    strct_ty = Struct(LongDouble, Ptr32, UInt64)
+    strct_ty.name = 'foo'
+    assert(strct_ty.cdecl() ==
+           'struct foo { long double fld0; char* fld1; uint64_t fld2; }')

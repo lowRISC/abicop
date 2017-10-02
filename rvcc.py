@@ -18,6 +18,12 @@ class Int(object):
         self.signed = signed
     def __repr__(self):
         return '{}Int{}'.format('S' if self.signed else 'U', self.size)
+    def ctype(self):
+        ty = 'int'+str(self.size)+'_t'
+        if not self.signed:
+            return 'u'+ty
+        else:
+            return ty
     def random_literal(self):
         if self.signed:
             lower = -2**(self.size-1)
@@ -28,8 +34,10 @@ class Int(object):
         suffix = ''
         if not self.signed:
             suffix += 'u'
-        if self.size > 32:
+        if self.size == 64:
             suffix += 'll'
+        elif self.size > 64:
+            raise ValueError("Can't create literal of that size")
         return str(val) + suffix
 
 def UInt(size):
@@ -49,6 +57,15 @@ class FP(object):
         self.alignment = size
     def __repr__(self):
         return 'FP{}'.format(self.size)
+    def ctype(self):
+        if self.size == 32:
+            return 'float'
+        elif self.size == 64:
+            return 'double'
+        elif self.size == 128:
+            return 'long double'
+        else:
+            raise ValueError('no ctype')
     def random_literal(self):
         # For now, don't bother generating any possible fp value
         int_part = random.randint(-1000, 1000)
@@ -72,6 +89,8 @@ class Ptr(object):
         self.alignment = size
     def __repr__(self):
         return 'Ptr{}'.format(self.size)
+    def ctype(self):
+        return 'char*'
     def random_literal(self):
         val = random.randint(0, 2**(self.size-1))
         suffix = 'u'
@@ -87,6 +106,9 @@ class Pad(object):
         self.alignment = 1
     def __repr__(self):
         return 'Pad{}'.format(self.size)
+
+field_names = ['fld'+str(i) for i in range(0, 100)]
+struct_counter = 0
 
 class Struct(object):
     # Add padding objects when necessary to ensure struct members have their 
@@ -105,6 +127,7 @@ class Struct(object):
             i+= 1
 
     def __init__(self, *members):
+        global struct_counter
         self.members = list(members)
         if len(members) == 0:
             self.alignment = 8
@@ -114,6 +137,8 @@ class Struct(object):
         self.alignment = max(m.alignment for m in members)
         self.size = sum(m.size for m in members)
         self.size = align_to(self.size, self.alignment)
+        self.name = 'strctty'+str(struct_counter)
+        struct_counter += 1
 
     def flatten(self):
         children = []
@@ -128,14 +153,30 @@ class Struct(object):
         return 'Struct({}, s{}, a{})'.format(self.members, 
                 self.size, self.alignment)
 
-    def random_literal(self, name):
-        if (not name):
-            raise ValueError('must have type name')
-        res = '(struct ' + name + '){'
+    def cdecl(self):
+        res = 'struct ' + self.name + ' { '
+        mem_ctypes = []
+        i = 0
+        for ty in self.members:
+            if hasattr(ty, 'flatten'):
+                raise ValueError("don't support nested aggregates")
+            if isinstance(ty, Pad):
+                continue
+            mem_ctypes.append(ty.ctype() + ' ' + field_names[i] + ';')
+            i += 1
+        return res + ' '.join(mem_ctypes) + ' }'
+
+    def ctype(self):
+        return 'struct ' + self.name
+
+    def random_literal(self):
+        res = '(struct ' + self.name + '){'
         random_lits = []
         for ty in self.members:
             if hasattr(ty, 'flatten'):
                 raise ValueError("don't support nested aggregates")
+            if isinstance(ty, Pad):
+                continue
             random_lits.append(ty.random_literal())
         return res + ', '.join(random_lits) + '}'
 
@@ -337,6 +378,9 @@ class RVMachine(object):
             raise ValueError("unsupported FLEN")
         self.xlen = xlen
         self.flen = flen
+
+    def ptr_ty(self):
+        return Ptr(self.xlen)
 
     # Should be called after any expected VarArgs has been flattened
     def verify_arg_list(self, in_args, out_arg):
